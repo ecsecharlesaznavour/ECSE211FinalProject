@@ -103,7 +103,65 @@ public class MasterBrick {
 	
 	public void travelTo(double x, double y)
 	{
+		double X = odo.getX();
+		double Y = odo.getY();
+		double ang = 0;
+		
 		odoCor.setAllow(true);
+		
+		if(x<X && y>Y)
+			ang = 90;
+		else if(x>X && y>Y)
+			ang = 0;
+		else if(x<X && y<Y)
+			ang = 180;
+		else
+			ang = 270;
+		
+		turnTo(ang);
+		
+		double dist = getUSFilteredData(Usp1, data, 0);
+		
+		leftMotor.setSpeed(200);
+		rightMotor.setSpeed(200);
+		
+		leftMotor.forward();
+		rightMotor.forward();
+		
+		
+		while(Math.abs(x-odo.getX()) > 1 || Math.abs(y - odo.getY()) >1)
+		{
+			if(dist<30)
+				Avoid();
+			
+			dist = getUSFilteredData(Usp1, data, dist);
+		}
+		
+		ang += 90;
+		if(ang>360)
+			ang-=360;
+		
+		turnTo(ang);
+		
+		leftMotor.setSpeed(200);
+		rightMotor.setSpeed(200);
+		
+		leftMotor.forward();
+		rightMotor.forward();
+		
+		while(!(Math.abs(x-odo.getX()) < 1 && Math.abs(y - odo.getY()) < 1))
+		{
+			dist = getUSFilteredData(Usp1, data, dist);
+			
+			if(dist<30)
+				Avoid();
+		}
+		
+		leftMotor.stop(true);
+		rightMotor.stop(false);
+		
+		if(Math.pow(x - odo.getX(), 2) + Math.pow(y - odo.getY(), 2) > 2)
+			travelTo(x,y);
 	}
 	
 	public void Avoid()
@@ -119,7 +177,11 @@ public class MasterBrick {
 		leftMotor.forward();
 		rightMotor.forward();
 		
-		while(getUSFilteredData(Usp2, data, 0)<60);
+		double dist = getUSFilteredData(Usp2, data, 0);
+		
+		while((dist = getUSFilteredData(Usp2, data, dist))<60);
+		
+		try{Thread.sleep(2000);} catch(Exception e){}
 		
 		ang-= 90;
 		if(ang<0)

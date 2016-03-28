@@ -10,7 +10,7 @@ public class DualOdometryCorrection extends Thread{
 	private SampleProvider Csp1, Csp2;
 	private float[] datas1, datas2;
 	private EV3LargeRegulatedMotor leftMotor, rightMotor;
-	private boolean black1, black2, allowAng = false;
+	private boolean black1, black2, allowAng, enabled = false;
 	private Odometer odometer;
 	
 	/**
@@ -38,55 +38,58 @@ public class DualOdometryCorrection extends Thread{
 	 */
 	public void run()
 	{
-		float data1 = getFilteredData(Csp1, datas1, -1);
-		float data2 = getFilteredData(Csp2, datas2, -1);
+		float data1 = getCSFilteredData(Csp1, datas1, 0);
+		float data2 = getCSFilteredData(Csp2, datas2, 0);
 		while(true)
 		{
-			float data3 = getFilteredData(Csp1, datas1, data1);
-			float data4 = getFilteredData(Csp2, datas2, data2);
+			float data3 = getCSFilteredData(Csp1, datas1, data1);
+			float data4 = getCSFilteredData(Csp2, datas2, data2);
 			if(Math.abs(data1 - data3) > 0.15)
 				black1 = !black1;
 			if(Math.abs(data2 - data4) > 0.15)
 				black2 = !black2;
 			
-			if(black1 && !black2)
+			if(enabled)
 			{
-				if(allowAng)
+				if(black1 && !black2)
 				{
-					leftMotor.stop();
-					while(black2 != black1 )
+					if(allowAng)
 					{
-						data2 = data4;
-						data4 = getFilteredData(Csp2, datas2, data2);
-						black2 = ((data2 - data4) > 0.15);
+						leftMotor.stop();
+						while(black2 != black1 )
+						{
+							data2 = data4;
+							data4 = getCSFilteredData(Csp2, datas2, data2);
+							black2 = ((data2 - data4) > 0.15);
+						}
+						leftMotor.forward();
+						correctOdo(10);
+						try{Thread.sleep(500);}catch(Exception e){}
+						allowAng = false;
 					}
-					leftMotor.forward();
+				} else if(black2 && !black1)
+				{
+					if(allowAng)
+					{
+						rightMotor.stop();
+						while(black2 != black1)
+						{
+							data1 = data3;
+							data3 = getCSFilteredData(Csp1, datas1, data1);
+							black1 = ((data1 - data3) > 0.15);
+						}
+						rightMotor.forward();
+						correctOdo(10);
+						try{Thread.sleep(500);}catch(Exception e){}
+						allowAng = false;
+					}
+				} else if(black1 || black2)
+				{
 					correctOdo(10);
 					try{Thread.sleep(500);}catch(Exception e){}
-					allowAng = false;
 				}
-			} else if(black2 && !black1)
-			{
-				if(allowAng)
-				{
-					rightMotor.stop();
-					while(black2 != black1)
-					{
-						data1 = data3;
-						data3 = getFilteredData(Csp1, datas1, data1);
-						black1 = ((data1 - data3) > 0.15);
-					}
-					rightMotor.forward();
-					correctOdo(10);
-					try{Thread.sleep(500);}catch(Exception e){}
-					allowAng = false;
-				}
-			} else if(black1 || black2)
-			{
-				correctOdo(10);
-				try{Thread.sleep(500);}catch(Exception e){}
+				
 			}
-			
 			
 			data1 = data3;
 			data2 = data4;
@@ -141,42 +144,48 @@ public class DualOdometryCorrection extends Thread{
 	 * @param lData Last Data of the Sensor.
 	 * @return Filtered Data detected by the Sensor.
 	 */
-	public float getFilteredData(SampleProvider sp, float[] datas, float lData)
+	private float getCSFilteredData(SampleProvider sp, float[] data, double last)
 	{
+		sp.fetchSample(data, 0);
+		float newDist = data[0]*100;
 		int Filter = 0;
-		sp.fetchSample(datas, 0);
-		float data = datas[0]*100;
 		
-		if(lData < 0)
-			lData = data;
-		if(Math.abs(lData - data) > 0.15)
+		if(last == 0)
+			return newDist;
+		else
 		{
-			while(Filter<15)
+			if(Math.abs(last-newDist) > 0.15)
 			{
-				sp.fetchSample(datas, 0);
-				data = datas[0]*100;
-				if(Math.abs(lData - data) > 0.15)
+				while(Filter < 15 && Math.abs(last-newDist) > 0.15)
+				{
 					Filter++;
-				else
-					break;
+					sp.fetchSample(data, 0);
+					newDist = data[0]*100;
+					try{Thread.sleep(25);} catch(Exception e) {}
+				}
 			}
 		}
-		return data;
+		
+		return newDist;
 	}
 	
-	public void CSEnable(EV3ColorSensor sensor)
+	public void Enable()
 	{
 		synchronized(this)
 		{
-			sensor.setFloodlight(true);
+			leftSensor.setFloodlight(true);
+			rightSensor.setFloodlight(true);
+			enabled = true;
 		}
 	}
 	
-	public void CSDisable(EV3ColorSensor sensor)
+	public void Disable()
 	{
 		synchronized(this)
 		{
-			sensor.setFloodlight(false);
+			leftSensor.setFloodlight(true);
+			rightSensor.setFloodlight(true);
+			enabled = false;
 		}
 	}
 	
