@@ -1,10 +1,8 @@
+package classes2;
+
 import lejos.hardware.BrickFinder;
 import lejos.robotics.RegulatedMotor;
 import lejos.hardware.Button;
-import lejos.hardware.ev3.LocalEV3;
-import lejos.hardware.motor.BaseRegulatedMotor;
-import lejos.hardware.motor.EV3LargeRegulatedMotor;
-import lejos.robotics.SampleProvider;
 import lejos.remote.ev3.RemoteRequestEV3;
 
 

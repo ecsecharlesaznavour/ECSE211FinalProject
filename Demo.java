@@ -29,6 +29,7 @@ public class Demo {
 		
 		MB.doLocalization();
 		MB.turnTo(0);
+		MB.travelTo(60, 30);
 		
 		System.exit(0);
 	}

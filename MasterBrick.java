@@ -103,6 +103,10 @@ public class MasterBrick {
 	
 	public void travelTo(double x, double y)
 	{
+		USEnable(frontSensor);
+		USEnable(rightSensor);
+		odoCor.Enable();
+		
 		double X = odo.getX();
 		double Y = odo.getY();
 		double ang = 0;
@@ -129,7 +133,7 @@ public class MasterBrick {
 		rightMotor.forward();
 		
 		
-		while(Math.abs(x-odo.getX()) > 1 || Math.abs(y - odo.getY()) >1)
+		while(Math.abs(x-odo.getX()) > 1 && Math.abs(y - odo.getY()) > 1)
 		{
 			if(dist<30)
 				Avoid();

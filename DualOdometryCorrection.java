@@ -1,5 +1,7 @@
 package classes2;
 
+import lejos.hardware.ev3.LocalEV3;
+import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.robotics.SampleProvider;
@@ -12,6 +14,7 @@ public class DualOdometryCorrection extends Thread{
 	private EV3LargeRegulatedMotor leftMotor, rightMotor;
 	private boolean black1, black2, allowAng, enabled = false;
 	private Odometer odometer;
+	private final static TextLCD t = LocalEV3.get().getTextLCD();
 	
 	/**
 	 * Default Constructor for the DualOdometryCorrection class.
@@ -25,6 +28,9 @@ public class DualOdometryCorrection extends Thread{
 			EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
 			Odometer odometer)
 	{
+		this.odometer = odometer;
+		this.leftMotor = leftMotor;
+		this.rightMotor = rightMotor;
 		this.rightSensor = rightSensor;
 		this.leftSensor = leftSensor;
 		this.Csp1 = this.rightSensor.getRedMode();
@@ -38,15 +44,15 @@ public class DualOdometryCorrection extends Thread{
 	 */
 	public void run()
 	{
-		float data1 = getCSFilteredData(Csp1, datas1, 0);
-		float data2 = getCSFilteredData(Csp2, datas2, 0);
+		int data1 = getCSFilteredData(Csp1, datas1, 0);
+		int data2 = getCSFilteredData(Csp2, datas2, 0);
 		while(true)
 		{
-			float data3 = getCSFilteredData(Csp1, datas1, data1);
-			float data4 = getCSFilteredData(Csp2, datas2, data2);
-			if(Math.abs(data1 - data3) > 0.15)
+			int data3 = getCSFilteredData(Csp1, datas1, data1);
+			int data4 = getCSFilteredData(Csp2, datas2, data2);
+			if(Math.abs(data1 - data3) > 15)
 				black1 = !black1;
-			if(Math.abs(data2 - data4) > 0.15)
+			if(Math.abs(data2 - data4) > 15)
 				black2 = !black2;
 			
 			if(enabled)
@@ -55,12 +61,12 @@ public class DualOdometryCorrection extends Thread{
 				{
 					if(allowAng)
 					{
-						leftMotor.stop();
+						leftMotor.stop(true);
 						while(black2 != black1 )
 						{
 							data2 = data4;
 							data4 = getCSFilteredData(Csp2, datas2, data2);
-							black2 = ((data2 - data4) > 0.15);
+							black2 = ((data2 - data4) > 15);
 						}
 						leftMotor.forward();
 						correctOdo(10);
@@ -71,25 +77,30 @@ public class DualOdometryCorrection extends Thread{
 				{
 					if(allowAng)
 					{
-						rightMotor.stop();
-						while(black2 != black1)
+						rightMotor.stop(true);
+						while(black1 != black2)
 						{
 							data1 = data3;
 							data3 = getCSFilteredData(Csp1, datas1, data1);
-							black1 = ((data1 - data3) > 0.15);
+							black1 = ((data1 - data3) > 15);
 						}
 						rightMotor.forward();
 						correctOdo(10);
 						try{Thread.sleep(500);}catch(Exception e){}
 						allowAng = false;
 					}
-				} else if(black1 || black2)
-				{
-					correctOdo(10);
-					try{Thread.sleep(500);}catch(Exception e){}
 				}
 				
 			}
+			
+			if(black1 || black2)
+			{
+				correctOdo(10);
+				try{Thread.sleep(500);}catch(Exception e){}
+			}
+			
+			t.drawString("" + data3, 0, 3);
+			t.drawString("" + data4, 0, 4);
 			
 			data1 = data3;
 			data2 = data4;
@@ -144,10 +155,10 @@ public class DualOdometryCorrection extends Thread{
 	 * @param lData Last Data of the Sensor.
 	 * @return Filtered Data detected by the Sensor.
 	 */
-	private float getCSFilteredData(SampleProvider sp, float[] data, double last)
+	private int getCSFilteredData(SampleProvider sp, float[] data, int last)
 	{
 		sp.fetchSample(data, 0);
-		float newDist = data[0]*100;
+		int newDist = (int) (data[0]*100);
 		int Filter = 0;
 		
 		if(last == 0)
@@ -156,12 +167,11 @@ public class DualOdometryCorrection extends Thread{
 		{
 			if(Math.abs(last-newDist) > 0.15)
 			{
-				while(Filter < 15 && Math.abs(last-newDist) > 0.15)
+				while(Filter < 15 && Math.abs(last-newDist) > 15)
 				{
 					Filter++;
 					sp.fetchSample(data, 0);
-					newDist = data[0]*100;
-					try{Thread.sleep(25);} catch(Exception e) {}
+					newDist = (int) (data[0]*100);
 				}
 			}
 		}

@@ -30,6 +30,8 @@ package classes2;
 
 import lejos.utility.Timer;
 import lejos.utility.TimerListener;
+import lejos.hardware.ev3.LocalEV3;
+import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
 public class Odometer implements TimerListener {
@@ -40,6 +42,7 @@ public class Odometer implements TimerListener {
 	private double leftRadius, rightRadius, width;
 	private double x, y, theta;
 	private double[] oldDH, dDH;
+	private final static TextLCD t = LocalEV3.get().getTextLCD();
 	
 	// constructor
 	public Odometer (EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, int INTERVAL, boolean autostart) {
@@ -49,7 +52,7 @@ public class Odometer implements TimerListener {
 		
 		this.rightRadius = 2.1;
 		this.leftRadius = 2.1;
-		this.width = 15.8;
+		this.width = 15.3;
 		
 		this.x = 0.0;
 		this.y = 0.0;
@@ -102,6 +105,8 @@ public class Odometer implements TimerListener {
 
 			x += dDH[0] * Math.cos(Math.toRadians(theta));
 			y += dDH[0] * Math.sin(Math.toRadians(theta));
+			t.drawInt((int) x, 0, 0);
+			t.drawInt((int) y, 0, 1);
 		}
 
 		oldDH[0] += dDH[0];
