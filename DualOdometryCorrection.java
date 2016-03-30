@@ -165,7 +165,7 @@ public class DualOdometryCorrection extends Thread{
 			return newDist;
 		else
 		{
-			if(Math.abs(last-newDist) > 0.15)
+			if(Math.abs(last-newDist) > 15)
 			{
 				while(Filter < 15 && Math.abs(last-newDist) > 15)
 				{

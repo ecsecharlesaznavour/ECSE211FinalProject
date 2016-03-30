@@ -111,7 +111,7 @@ public class MasterBrick {
 		double Y = odo.getY();
 		double ang = 0;
 		
-		odoCor.setAllow(true);
+		//odoCor.setAllow(true);
 		
 		if(x<X && y>Y)
 			ang = 90;
@@ -183,6 +183,7 @@ public class MasterBrick {
 		
 		double dist = getUSFilteredData(Usp2, data, 0);
 		
+		while((dist = getUSFilteredData(Usp2, data, dist))>60);
 		while((dist = getUSFilteredData(Usp2, data, dist))<60);
 		
 		try{Thread.sleep(2000);} catch(Exception e){}
