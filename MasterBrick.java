@@ -1,5 +1,6 @@
 package classes2;
 
+import lejos.hardware.Button;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
 import lejos.robotics.SampleProvider;
@@ -23,6 +24,7 @@ public class MasterBrick {
 		this.rightSensor = rightSensor;
 		this.odo = odo;
 		this.odoCor = odoCor;
+		this.odoCor.Disable();
 		this.Usp1 = frontSensor.getDistanceMode();
 		this.Usp2 = rightSensor.getDistanceMode();
 		this.data = new float[Usp1.sampleSize()];
@@ -30,30 +32,39 @@ public class MasterBrick {
 		this.rightSensor.disable();
 	}
 	
+	/**
+	 * Command to do localization.
+	 */
 	public void doLocalization()
 	{
+		//Disables the right sensor and enables the left sensor.
 		USDisable(rightSensor);
 		USEnable(frontSensor);
+		odoCor.Disable();
 		
 		double angleA, angleB;
 		
+		//sets rotating speeds and start turning right
 		leftMotor.setSpeed(100);
 		rightMotor.setSpeed(100);
 		
 		leftMotor.forward();
 		rightMotor.backward();
 		
+		//turn until first falling edge
 		float dist = getUSFilteredData(Usp1,data, 0);
 		while((dist = getUSFilteredData(Usp1, data,dist)) < 41);
 		while((dist = getUSFilteredData(Usp1, data,dist)) > 40);
-		
+		Button.LEDPattern(1);
+		//gets angle
 		angleA = odo.getAng();
-		
+		//turn the other way around
 		leftMotor.backward();
 		rightMotor.forward();
-		
+		//looks for second edge
 		while((dist = getUSFilteredData(Usp1, data,dist)) < 41);
 		while((dist = getUSFilteredData(Usp1, data,dist)) > 40);
+		Button.LEDPattern(2);
 		angleB = odo.getAng();
 		
 		double delta = 0;
@@ -70,13 +81,17 @@ public class MasterBrick {
 		if(delta < 0)
 			delta = delta+360;
 			
+		//turns to 0 degres and sets angle
+		//Button.LEDPattern(3);
 		turnTo((delta)%360);
-		
-		odo.setPosition(new double [] {0.0, 0.0, 0.0}, new boolean [] {true, true, true});
+		odo.setPosition(new double [] {240.0, 0.0, 90.0}, new boolean [] {true, true, true});
 	}
 	
 	public void turnTo(double angle)
 	{
+		if(angle<0)
+			angle+=360;
+		angle = angle%360;
 		double error = angle - this.odo.getAng();
 		
 		leftMotor.setSpeed(100);
@@ -101,28 +116,23 @@ public class MasterBrick {
 		rightMotor.stop(false);
 	}
 	
+	/**
+	 * command responsible for the travelTo method
+	 * @param x x-coordinate of destination
+	 * @param y y-coordinate of destination
+	 */
 	public void travelTo(double x, double y)
 	{
+		//Enables the needed sensors
 		USEnable(frontSensor);
 		USEnable(rightSensor);
-		odoCor.Enable();
-		
-		double X = odo.getX();
-		double Y = odo.getY();
-		double ang = 0;
+		odoCor.Disable();
 		
 		//odoCor.setAllow(true);
 		
-		if(x<X && y>Y)
-			ang = 90;
-		else if(x>X && y>Y)
-			ang = 0;
-		else if(x<X && y<Y)
-			ang = 180;
-		else
-			ang = 270;
+		double minAng = (Math.atan2(y - odo.getY(), x - odo.getX())) * (180.0 / Math.PI);
 		
-		turnTo(ang);
+		turnTo(minAng);
 		
 		double dist = getUSFilteredData(Usp1, data, 0);
 		
@@ -133,32 +143,21 @@ public class MasterBrick {
 		rightMotor.forward();
 		
 		
-		while(Math.abs(x-odo.getX()) > 1 && Math.abs(y - odo.getY()) > 1)
+		while(Math.pow(x - odo.getX(), 2) + Math.pow(y - odo.getY(), 2) > 2)
 		{
 			if(dist<30)
+			{
 				Avoid();
+				minAng = (Math.atan2(y - odo.getY(), x - odo.getX())) * (180.0 / Math.PI);
+				turnTo(minAng);
+				leftMotor.setSpeed(200);
+				rightMotor.setSpeed(200);
+				
+				leftMotor.forward();
+				rightMotor.forward();
+			}
 			
 			dist = getUSFilteredData(Usp1, data, dist);
-		}
-		
-		ang += 90;
-		if(ang>360)
-			ang-=360;
-		
-		turnTo(ang);
-		
-		leftMotor.setSpeed(200);
-		rightMotor.setSpeed(200);
-		
-		leftMotor.forward();
-		rightMotor.forward();
-		
-		while(!(Math.abs(x-odo.getX()) < 1 && Math.abs(y - odo.getY()) < 1))
-		{
-			dist = getUSFilteredData(Usp1, data, dist);
-			
-			if(dist<30)
-				Avoid();
 		}
 		
 		leftMotor.stop(true);
@@ -216,7 +215,7 @@ public class MasterBrick {
 					Filter++;
 					sp.fetchSample(data, 0);
 					newDist = data[0]*100;
-					try{Thread.sleep(25);} catch(Exception e) {}
+					try{Thread.sleep(10);} catch(Exception e) {}
 				}
 			}
 		}
