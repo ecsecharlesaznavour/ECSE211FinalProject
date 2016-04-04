@@ -1,5 +1,6 @@
 package classes2;
 
+import lejos.hardware.Sound;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -15,6 +16,8 @@ public class DualOdometryCorrection extends Thread{
 	private boolean black1, black2, allowAng, enabled = false;
 	private Odometer odometer;
 	private final static TextLCD t = LocalEV3.get().getTextLCD();
+	
+	private int lightThreshold = 20;
 	
 	public DualOdometryCorrection(EV3ColorSensor leftSensor, EV3ColorSensor rightSensor,
 			EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
@@ -32,13 +35,34 @@ public class DualOdometryCorrection extends Thread{
 	}
 	public void run()
 	{
-		//TODO fill the run method
+		while (enabled){
+			int result = getCSFilteredData(Csp1, datas1, 0);
+			if (result < lightThreshold){
+				Sound.beep();
+				if (odometer.getAng()<10 && odometer.getAng()>350){  //if robot moving along y axis
+					double currentY = odometer.getY();
+				    if (currentY % 30 < 10){                         //round currentY position to nearest multiple of 30
+				        odometer.setY(currentY - (currentY%30));
+				    }
+				    else if (currentY % 30 > 20){
+				        odometer.setY(currentY + (30 - currentY%30));
+				    }
+				}
+				
+				else if (odometer.getAng()<100 && odometer.getAng()>80){  //if robot moving along x axis
+					double currentX = odometer.getX();
+				    if (currentX % 30 < 10){                         //round currentX position to nearest multiple of 30
+				        odometer.setX(currentX - (currentX%30));
+				    }
+				    else if (currentX % 30 > 20){
+				        odometer.setY(currentX + (30 - currentX%30));
+				    }
+				}
+			}
+		}
 	}
 	
-	public void doCorrection()
-	{
-		//TODO fill the correction code
-	}
+	//TODO : theta correction
 	
 	/**
 	 * Filters the data returned by the desired Sensor.

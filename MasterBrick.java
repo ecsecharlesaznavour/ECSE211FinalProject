@@ -14,6 +14,7 @@ public class MasterBrick {
 	private DualOdometryCorrection odoCor;
 	private float[] data;
 	
+	
 	public MasterBrick(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
 			EV3UltrasonicSensor frontSensor, EV3UltrasonicSensor rightSensor,
 			Odometer odo, DualOdometryCorrection odoCor)
@@ -72,19 +73,23 @@ public class MasterBrick {
 			angleB = angleB-360;
 		if(angleA > 180)
 			angleA = angleA-360;
-			
+		
 		if(angleA<angleB)
 			delta= ((angleA + angleB)/2)-45;
 		else
 			delta= ((angleA + angleB)/2)-225;
-			
+		
 		if(delta < 0)
 			delta = delta+360;
-			
+		
 		//turns to 0 degres and sets angle
 		//Button.LEDPattern(3);
 		turnTo((delta)%360);
-		odo.setPosition(new double [] {240.0, 0.0, 90.0}, new boolean [] {true, true, true});
+		odo.setPosition(new double [] {0.0, 0.0, 0.0}, new boolean [] {true, true, true});
+		turnTo(-90);
+		odo.setX(getUSFilteredData(Usp1, data,dist)-25.48);
+		turnTo(-180);
+		odo.setY(getUSFilteredData(Usp1, data,dist)-25.48);
 	}
 	
 	public void turnTo(double angle)
@@ -128,13 +133,13 @@ public class MasterBrick {
 		USEnable(rightSensor);
 		odoCor.Disable();
 		
+		boolean avoided = false;
+		
 		//odoCor.setAllow(true);
 		
-		double minAng = (Math.atan2(y - odo.getY(), x - odo.getX())) * (180.0 / Math.PI);
+		double ang = getFirstAng(odo.getX(), odo.getY(), x, y);
 		
-		turnTo(minAng);
-		
-		double dist = getUSFilteredData(Usp1, data, 0);
+		turnTo(ang);
 		
 		leftMotor.setSpeed(200);
 		rightMotor.setSpeed(200);
@@ -142,60 +147,98 @@ public class MasterBrick {
 		leftMotor.forward();
 		rightMotor.forward();
 		
+		double dist = getUSFilteredData(Usp1, data, 0);
 		
-		while(Math.pow(x - odo.getX(), 2) + Math.pow(y - odo.getY(), 2) > 2)
+		while(Math.abs(odo.getX()-x)>2 || Math.abs(odo.getY()-y)>2)
 		{
-			if(dist<30)
+			if((dist = getUSFilteredData(Usp1, data, dist))<30)
 			{
-				Avoid();
-				minAng = (Math.atan2(y - odo.getY(), x - odo.getX())) * (180.0 / Math.PI);
-				turnTo(minAng);
+				Avoid(ang, x, y);
+				//TODO
 				leftMotor.setSpeed(200);
 				rightMotor.setSpeed(200);
 				
 				leftMotor.forward();
 				rightMotor.forward();
 			}
-			
-			dist = getUSFilteredData(Usp1, data, dist);
 		}
 		
-		leftMotor.stop(true);
-		rightMotor.stop(false);
-		
+		if(!avoided)
+		{
+			ang = (ang+90)%360;
+			
+			turnTo(ang);
+			
+			while(!(Math.abs(odo.getX()-x)>2 && Math.abs(odo.getY()-y)>2))
+			{
+				if((dist = getUSFilteredData(Usp1, data, dist))<30)
+				{
+					Avoid(ang, x, y);
+					//TODO
+					leftMotor.setSpeed(200);
+					rightMotor.setSpeed(200);
+					
+					leftMotor.forward();
+					rightMotor.forward();
+				}
+			}
+			
+			leftMotor.stop(true);
+			rightMotor.stop(false);
+		}
 		if(Math.pow(x - odo.getX(), 2) + Math.pow(y - odo.getY(), 2) > 2)
 			travelTo(x,y);
 	}
 	
-	public void Avoid()
+	private double getFirstAng(double x, double y, double destx, double desty)
 	{
-		double ang = odo.getAng()+90;
-		
-		if(ang>359)
-			ang-=360;
-		turnTo(ang);
+		if(destx<x && desty<y)
+			return 180;
+		else if(destx<x && desty>y)
+			return 90;
+		else if(destx>x && desty<y)
+			return 270;
+		else return 0;
+	}
+	
+	public void Avoid(double ang, double destx, double desty)
+	{
+		double dist = getUSFilteredData(Usp1, data, 0);
+		while((dist = getUSFilteredData(Usp1, data, dist))<60)
+		{
+			turnTo((ang = (ang+90)%360));
+		}
 		
 		leftMotor.setSpeed(200);
 		rightMotor.setSpeed(200);
 		leftMotor.forward();
 		rightMotor.forward();
 		
-		double dist = getUSFilteredData(Usp2, data, 0);
+		double dist2 = getUSFilteredData(Usp2, data, 0);
 		
-		while((dist = getUSFilteredData(Usp2, data, dist))>60);
-		while((dist = getUSFilteredData(Usp2, data, dist))<60);
+		while((dist2 = getUSFilteredData(Usp2, data, dist2))>60);
+		while((dist2 = getUSFilteredData(Usp2, data, dist2))<60);
 		
 		try{Thread.sleep(2000);} catch(Exception e){}
 		
-		ang-= 90;
-		if(ang<0)
+		ang -=90;
+		if(ang < 0)
 			ang+=360;
-		turnTo(ang);
 		
 		leftMotor.setSpeed(200);
 		rightMotor.setSpeed(200);
 		leftMotor.forward();
 		rightMotor.forward();
+		
+		while((dist2 = getUSFilteredData(Usp2, data, dist2))>60);
+		while((dist2 = getUSFilteredData(Usp2, data, dist2))<60);
+		
+		try{Thread.sleep(2000);} catch(Exception e){}
+		
+		leftMotor.stop(true);
+		rightMotor.stop(false);
+		
+		travelTo(destx, desty);
 	}
 	
 	private float getUSFilteredData(SampleProvider sp, float[] data, double last)
