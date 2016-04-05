@@ -1,6 +1,5 @@
 package classes2;
 
-import lejos.hardware.Button;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
 import lejos.robotics.SampleProvider;
@@ -56,7 +55,6 @@ public class MasterBrick {
 		float dist = getUSFilteredData(Usp1,data, 0);
 		while((dist = getUSFilteredData(Usp1, data,dist)) < 41);
 		while((dist = getUSFilteredData(Usp1, data,dist)) > 40);
-		Button.LEDPattern(1);
 		//gets angle
 		angleA = odo.getAng();
 		//turn the other way around
@@ -65,7 +63,6 @@ public class MasterBrick {
 		//looks for second edge
 		while((dist = getUSFilteredData(Usp1, data,dist)) < 41);
 		while((dist = getUSFilteredData(Usp1, data,dist)) > 40);
-		Button.LEDPattern(2);
 		angleB = odo.getAng();
 		
 		double delta = 0;
@@ -83,13 +80,8 @@ public class MasterBrick {
 			delta = delta+360;
 		
 		//turns to 0 degres and sets angle
-		//Button.LEDPattern(3);
 		turnTo((delta)%360);
 		odo.setPosition(new double [] {0.0, 0.0, 0.0}, new boolean [] {true, true, true});
-		turnTo(-90);
-		odo.setX(getUSFilteredData(Usp1, data,dist)-25.48);
-		turnTo(-180);
-		odo.setY(getUSFilteredData(Usp1, data,dist)-25.48);
 	}
 	
 	public void turnTo(double angle)
@@ -149,17 +141,11 @@ public class MasterBrick {
 		
 		double dist = getUSFilteredData(Usp1, data, 0);
 		
-		while(Math.abs(odo.getX()-x)>2 || Math.abs(odo.getY()-y)>2)
+		while(Math.abs(odo.getX()-x)>2 && Math.abs(odo.getY()-y)>2)
 		{
 			if((dist = getUSFilteredData(Usp1, data, dist))<30)
 			{
 				Avoid(ang, x, y);
-				//TODO
-				leftMotor.setSpeed(200);
-				rightMotor.setSpeed(200);
-				
-				leftMotor.forward();
-				rightMotor.forward();
 			}
 		}
 		
@@ -169,25 +155,23 @@ public class MasterBrick {
 			
 			turnTo(ang);
 			
-			while(!(Math.abs(odo.getX()-x)>2 && Math.abs(odo.getY()-y)>2))
+			leftMotor.setSpeed(200);
+			rightMotor.setSpeed(200);
+			
+			leftMotor.forward();
+			rightMotor.forward();
+			
+			while(!(Math.abs(odo.getX()-x)<2 && Math.abs(odo.getY()-y)<2))
 			{
 				if((dist = getUSFilteredData(Usp1, data, dist))<30)
 				{
 					Avoid(ang, x, y);
-					//TODO
-					leftMotor.setSpeed(200);
-					rightMotor.setSpeed(200);
-					
-					leftMotor.forward();
-					rightMotor.forward();
 				}
 			}
 			
 			leftMotor.stop(true);
 			rightMotor.stop(false);
 		}
-		if(Math.pow(x - odo.getX(), 2) + Math.pow(y - odo.getY(), 2) > 2)
-			travelTo(x,y);
 	}
 	
 	private double getFirstAng(double x, double y, double destx, double desty)

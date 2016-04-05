@@ -28,7 +28,7 @@ public class Demo {
 		odoCor.start();
 		
 		MB.doLocalization();
-		MB.travelTo(185, 155);
+		MB.travelTo(60, 30);
 		
 		System.exit(0);
 	}
