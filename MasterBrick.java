@@ -1,5 +1,6 @@
 package classes2;
 
+import lejos.hardware.Button;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
 import lejos.robotics.SampleProvider;
@@ -91,8 +92,8 @@ public class MasterBrick {
 		angle = angle%360;
 		double error = angle - this.odo.getAng();
 		
-		leftMotor.setSpeed(100);
-		rightMotor.setSpeed(100);
+		leftMotor.setSpeed(150);
+		rightMotor.setSpeed(150);
 		
 		if (error < -180.0) {
 			leftMotor.backward();
@@ -133,8 +134,11 @@ public class MasterBrick {
 		
 		turnTo(ang);
 		
-		leftMotor.setSpeed(200);
-		rightMotor.setSpeed(200);
+		this.odoCor.relocalize();
+		this.odo.setAng(ang);
+		
+		leftMotor.setSpeed(300);
+		rightMotor.setSpeed(300);
 		
 		leftMotor.forward();
 		rightMotor.forward();
@@ -155,8 +159,11 @@ public class MasterBrick {
 			
 			turnTo(ang);
 			
-			leftMotor.setSpeed(200);
-			rightMotor.setSpeed(200);
+			this.odoCor.relocalize();
+			this.odo.setAng(ang);
+			
+			leftMotor.setSpeed(300);
+			rightMotor.setSpeed(300);
 			
 			leftMotor.forward();
 			rightMotor.forward();
@@ -193,36 +200,48 @@ public class MasterBrick {
 			turnTo((ang = (ang+90)%360));
 		}
 		
-		leftMotor.setSpeed(200);
-		rightMotor.setSpeed(200);
+		leftMotor.setSpeed(300);
+		rightMotor.setSpeed(300);
 		leftMotor.forward();
 		rightMotor.forward();
 		
 		double dist2 = getUSFilteredData(Usp2, data, 0);
 		
 		while((dist2 = getUSFilteredData(Usp2, data, dist2))>60);
+		Button.LEDPattern(1);
 		while((dist2 = getUSFilteredData(Usp2, data, dist2))<60);
+		Button.LEDPattern(2);
 		
-		try{Thread.sleep(2000);} catch(Exception e){}
+		forward(18);
+		Button.LEDPattern(3);
 		
 		ang -=90;
 		if(ang < 0)
 			ang+=360;
 		
-		leftMotor.setSpeed(200);
-		rightMotor.setSpeed(200);
+		turnTo(ang);
+		
+		leftMotor.setSpeed(300);
+		rightMotor.setSpeed(300);
 		leftMotor.forward();
 		rightMotor.forward();
 		
 		while((dist2 = getUSFilteredData(Usp2, data, dist2))>60);
 		while((dist2 = getUSFilteredData(Usp2, data, dist2))<60);
 		
-		try{Thread.sleep(2000);} catch(Exception e){}
+		forward(18);
 		
 		leftMotor.stop(true);
 		rightMotor.stop(false);
 		
 		travelTo(destx, desty);
+	}
+	
+	public void forward(double length)
+	{
+		int tacho = (int) (length/(2.1*Math.PI)*360);
+		int TC = leftMotor.getTachoCount();
+		while(leftMotor.getTachoCount()<(TC+tacho));
 	}
 	
 	private float getUSFilteredData(SampleProvider sp, float[] data, double last)

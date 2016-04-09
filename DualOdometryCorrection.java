@@ -11,7 +11,7 @@ public class DualOdometryCorrection extends Thread{
 
 	private EV3ColorSensor rightSensor, leftSensor;
 	private SampleProvider Csp1, Csp2;
-	private float[] datas1, datas2;
+	private float[] data;
 	private EV3LargeRegulatedMotor leftMotor, rightMotor;
 	private boolean black1, black2, allowAng, enabled = false;
 	private Odometer odometer;
@@ -30,13 +30,12 @@ public class DualOdometryCorrection extends Thread{
 		this.leftSensor = leftSensor;
 		this.Csp1 = this.rightSensor.getRedMode();
 		this.Csp2 = this.leftSensor.getRedMode();
-		this.datas1 = new float[Csp1.sampleSize()];
-		this.datas2 = new float[Csp2.sampleSize()];
+		this.data = new float[Csp1.sampleSize()];
 	}
 	public void run()
 	{
 		while (enabled){
-			int result = getCSFilteredData(Csp1, datas1, 0);
+			int result = getCSFilteredData(Csp1, data, 0);
 			if (result < lightThreshold){
 				Sound.beep();
 				if (odometer.getAng()<10 && odometer.getAng()>350){  //if robot moving along y axis
@@ -62,7 +61,41 @@ public class DualOdometryCorrection extends Thread{
 		}
 	}
 	
-	//TODO : theta correction
+	public void relocalize()
+	{
+		Enable();
+		leftMotor.setSpeed(100);
+		rightMotor.setSpeed(100);
+		
+		leftMotor.forward();
+		rightMotor.forward();
+		
+		int col1 = getCSFilteredData(Csp1, data, 0);
+		int col2 = getCSFilteredData(Csp2, data, 0);
+		
+		int col1b;
+		int col2b;
+		while(true)
+		{
+			if(Math.abs((col1b = getCSFilteredData(Csp1, data, col1))-col1)> 10)
+			{
+				rightMotor.stop();
+				col1 = col1b;
+				while(Math.abs((col2b = getCSFilteredData(Csp2, data, col2))-col2)> 10);
+				rightMotor.forward();
+				break;
+			} else if(Math.abs((col2b = getCSFilteredData(Csp2, data, col2))-col2)> 10)
+			{
+				leftMotor.stop();
+				col2 = col2b;
+				while(Math.abs((col2b = getCSFilteredData(Csp1, data, col1))-col1)> 10);
+				leftMotor.forward();
+				break;
+			}
+		}
+		
+		Disable();
+	}
 	
 	/**
 	 * Filters the data returned by the desired Sensor.
@@ -81,9 +114,9 @@ public class DualOdometryCorrection extends Thread{
 			return newDist;
 		else
 		{
-			if(Math.abs(last-newDist) > 15)
+			if(Math.abs(last-newDist) > 10)
 			{
-				while(Filter < 15 && Math.abs(last-newDist) > 15)
+				while(Filter < 15 && Math.abs(last-newDist) > 10)
 				{
 					Filter++;
 					sp.fetchSample(data, 0);
