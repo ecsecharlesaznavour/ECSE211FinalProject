@@ -1,6 +1,5 @@
 package classes2;
 
-import lejos.hardware.Button;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
 import lejos.robotics.SampleProvider;
@@ -14,7 +13,6 @@ public class MasterBrick {
 	private DualOdometryCorrection odoCor;
 	private float[] data;
 	
-	
 	public MasterBrick(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
 			EV3UltrasonicSensor frontSensor, EV3UltrasonicSensor rightSensor,
 			Odometer odo, DualOdometryCorrection odoCor)
@@ -25,7 +23,6 @@ public class MasterBrick {
 		this.rightSensor = rightSensor;
 		this.odo = odo;
 		this.odoCor = odoCor;
-		this.odoCor.Disable();
 		this.Usp1 = frontSensor.getDistanceMode();
 		this.Usp2 = rightSensor.getDistanceMode();
 		this.data = new float[Usp1.sampleSize()];
@@ -41,13 +38,12 @@ public class MasterBrick {
 		//Disables the right sensor and enables the left sensor.
 		USDisable(rightSensor);
 		USEnable(frontSensor);
-		odoCor.Disable();
 		
 		double angleA, angleB;
 		
 		//sets rotating speeds and start turning right
-		leftMotor.setSpeed(100);
-		rightMotor.setSpeed(100);
+		leftMotor.setSpeed(150);
+		rightMotor.setSpeed(150);
 		
 		leftMotor.forward();
 		rightMotor.backward();
@@ -80,9 +76,9 @@ public class MasterBrick {
 		if(delta < 0)
 			delta = delta+360;
 		
-		//turns to 0 degres and sets angle
+		//turns to 0 degrees and sets angle
 		turnTo((delta)%360);
-		odo.setPosition(new double [] {0.0, 0.0, 0.0}, new boolean [] {true, true, true});
+		odo.setPosition(new double [] {-15.0, -15.0, 0.0}, new boolean [] {true, true, true});
 	}
 	
 	public void turnTo(double angle)
@@ -124,11 +120,8 @@ public class MasterBrick {
 		//Enables the needed sensors
 		USEnable(frontSensor);
 		USEnable(rightSensor);
-		odoCor.Disable();
 		
 		boolean avoided = false;
-		
-		//odoCor.setAllow(true);
 		
 		double ang = getFirstAng(odo.getX(), odo.getY(), x, y);
 		
@@ -143,15 +136,20 @@ public class MasterBrick {
 		leftMotor.forward();
 		rightMotor.forward();
 		
+		this.odoCor.doCorrection();
+		
 		double dist = getUSFilteredData(Usp1, data, 0);
 		
 		while(Math.abs(odo.getX()-x)>2 && Math.abs(odo.getY()-y)>2)
 		{
-			if((dist = getUSFilteredData(Usp1, data, dist))<30)
+			if((dist = getUSFilteredData(Usp1, data, dist))<15)
 			{
+				this.odoCor.stopCorrection();
 				Avoid(ang, x, y);
 			}
 		}
+		
+		this.odoCor.stopCorrection();
 		
 		if(!avoided)
 		{
@@ -168,16 +166,21 @@ public class MasterBrick {
 			leftMotor.forward();
 			rightMotor.forward();
 			
+			this.odoCor.doCorrection();
+			
 			while(!(Math.abs(odo.getX()-x)<2 && Math.abs(odo.getY()-y)<2))
 			{
-				if((dist = getUSFilteredData(Usp1, data, dist))<30)
+				if((dist = getUSFilteredData(Usp1, data, dist))<15)
 				{
+					this.odoCor.stopCorrection();
 					Avoid(ang, x, y);
 				}
 			}
 			
 			leftMotor.stop(true);
 			rightMotor.stop(false);
+			
+			this.odoCor.stopCorrection();
 		}
 	}
 	
@@ -208,12 +211,9 @@ public class MasterBrick {
 		double dist2 = getUSFilteredData(Usp2, data, 0);
 		
 		while((dist2 = getUSFilteredData(Usp2, data, dist2))>60);
-		Button.LEDPattern(1);
 		while((dist2 = getUSFilteredData(Usp2, data, dist2))<60);
-		Button.LEDPattern(2);
 		
 		forward(18);
-		Button.LEDPattern(3);
 		
 		ang -=90;
 		if(ang < 0)

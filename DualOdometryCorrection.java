@@ -1,8 +1,6 @@
 package classes2;
 
 import lejos.hardware.Sound;
-import lejos.hardware.ev3.LocalEV3;
-import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.robotics.SampleProvider;
@@ -13,11 +11,9 @@ public class DualOdometryCorrection extends Thread{
 	private SampleProvider Csp1, Csp2;
 	private float[] data;
 	private EV3LargeRegulatedMotor leftMotor, rightMotor;
-	private boolean black1, black2, allowAng, enabled = false;
 	private Odometer odometer;
-	private final static TextLCD t = LocalEV3.get().getTextLCD();
-	
-	private int lightThreshold = 20;
+	private boolean correct = false;
+	private int x,y = -1;
 	
 	public DualOdometryCorrection(EV3ColorSensor leftSensor, EV3ColorSensor rightSensor,
 			EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
@@ -34,41 +30,65 @@ public class DualOdometryCorrection extends Thread{
 	}
 	public void run()
 	{
-		while (enabled){
-			int result = getCSFilteredData(Csp1, data, 0);
-			if (result < lightThreshold){
-				Sound.beep();
-				if (odometer.getAng()<10 && odometer.getAng()>350){  //if robot moving along y axis
-					double currentY = odometer.getY();
-				    if (currentY % 30 < 10){                         //round currentY position to nearest multiple of 30
-				        odometer.setY(currentY - (currentY%30));
-				    }
-				    else if (currentY % 30 > 20){
-				        odometer.setY(currentY + (30 - currentY%30));
-				    }
-				}
+		int col = -1;
+		while(true)
+		{
+			if(correct)
+			{
+				int col2;
+				if(col==-1)
+					col = getCSFilteredData(Csp1, data, 0);
 				
-				else if (odometer.getAng()<100 && odometer.getAng()>80){  //if robot moving along x axis
-					double currentX = odometer.getX();
-				    if (currentX % 30 < 10){                         //round currentX position to nearest multiple of 30
-				        odometer.setX(currentX - (currentX%30));
-				    }
-				    else if (currentX % 30 > 20){
-				        odometer.setY(currentX + (30 - currentX%30));
-				    }
+				if(col - (col2 = getCSFilteredData(Csp1, data, col)) > 15)
+				{
+					Sound.beep();
+					Adjust();
+					col = col2;
+					try{ Thread.sleep(1000);} catch(Exception e){}
 				}
+			}
+			else
+			{
+				col = -1;
 			}
 		}
 	}
 	
+	private void Adjust()
+	{
+		if(Math.abs(odometer.getAng()-90) < 10)
+			odometer.setY((y++)*30.0 + 17);
+		else if(Math.abs(odometer.getAng() - 270) < 10)
+			odometer.setY((y--)*30.0 + 13);
+		else if(Math.abs(odometer.getAng() - 180) < 10)
+			odometer.setX((x--)*30.0 + 13);
+		else
+			odometer.setX((x++)*30.0 + 17);
+	}
+	
+	public void doCorrection()
+	{
+		correct = true;
+	}
+	
+	public void stopCorrection()
+	{
+		correct = false;
+	}
+	
 	public void relocalize()
 	{
-		Enable();
-		leftMotor.setSpeed(100);
-		rightMotor.setSpeed(100);
+		leftMotor.setSpeed(75);
+		rightMotor.setSpeed(75);
 		
 		leftMotor.forward();
 		rightMotor.forward();
+		
+		double[] inits = {odometer.getX(), odometer.getY()};
+		boolean x = true;
+		if(Math.abs(odometer.getAng()-90)<10 || Math.abs(odometer.getAng()-270)<10)
+			x = false;
+			
 		
 		int col1 = getCSFilteredData(Csp1, data, 0);
 		int col2 = getCSFilteredData(Csp2, data, 0);
@@ -77,24 +97,33 @@ public class DualOdometryCorrection extends Thread{
 		int col2b;
 		while(true)
 		{
-			if(Math.abs((col1b = getCSFilteredData(Csp1, data, col1))-col1)> 10)
+			if(col1-(col1b = getCSFilteredData(Csp1, data, col1))> 5)
 			{
-				rightMotor.stop();
-				col1 = col1b;
-				while(Math.abs((col2b = getCSFilteredData(Csp2, data, col2))-col2)> 10);
-				rightMotor.forward();
+				if(col2-(col2b = getCSFilteredData(Csp2, data, col2)) < 5)
+				{
+					rightMotor.stop();
+					col1 = col1b;
+					while(col2-(col2b = getCSFilteredData(Csp2, data, col2))<5)
+						col2 = col2b;
+					leftMotor.stop();
+				}
 				break;
-			} else if(Math.abs((col2b = getCSFilteredData(Csp2, data, col2))-col2)> 10)
+			} else if(col2-(col2b = getCSFilteredData(Csp2, data, col2))> 5)
 			{
-				leftMotor.stop();
-				col2 = col2b;
-				while(Math.abs((col2b = getCSFilteredData(Csp1, data, col1))-col1)> 10);
-				leftMotor.forward();
+				if(col1-(col1b = getCSFilteredData(Csp1, data, col1))< 5)
+				{
+					leftMotor.stop();
+					col2 = col2b;
+					while(col1-(col1b = getCSFilteredData(Csp1, data, col1))<5)
+						col1 = col1b;
+					rightMotor.stop();
+				}
 				break;
 			}
+			col1 = col1b;
+			col2 = col2b;
 		}
-		
-		Disable();
+		Adjust();
 	}
 	
 	/**
@@ -126,26 +155,6 @@ public class DualOdometryCorrection extends Thread{
 		}
 		
 		return newDist;
-	}
-	
-	public void Enable()
-	{
-		synchronized(this)
-		{
-			leftSensor.setFloodlight(true);
-			rightSensor.setFloodlight(true);
-			enabled = true;
-		}
-	}
-	
-	public void Disable()
-	{
-		synchronized(this)
-		{
-			leftSensor.setFloodlight(false);
-			rightSensor.setFloodlight(false);
-			enabled = false;
-		}
 	}
 
 }
