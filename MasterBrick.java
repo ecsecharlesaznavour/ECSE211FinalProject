@@ -42,8 +42,8 @@ public class MasterBrick {
 		double angleA, angleB;
 		
 		//sets rotating speeds and start turning right
-		leftMotor.setSpeed(150);
-		rightMotor.setSpeed(150);
+		leftMotor.setSpeed(125);
+		rightMotor.setSpeed(125);
 		
 		leftMotor.forward();
 		rightMotor.backward();
@@ -127,15 +127,7 @@ public class MasterBrick {
 		
 		turnTo(ang);
 		
-		this.odoCor.relocalize();
-		this.odo.setAng(ang);
-		
-		leftMotor.setSpeed(300);
-		rightMotor.setSpeed(300);
-		
-		leftMotor.forward();
-		rightMotor.forward();
-		
+		this.odoCor.relocalize(ang);
 		this.odoCor.doCorrection();
 		
 		double dist = getUSFilteredData(Usp1, data, 0);
@@ -157,18 +149,10 @@ public class MasterBrick {
 			
 			turnTo(ang);
 			
-			this.odoCor.relocalize();
-			this.odo.setAng(ang);
-			
-			leftMotor.setSpeed(300);
-			rightMotor.setSpeed(300);
-			
-			leftMotor.forward();
-			rightMotor.forward();
-			
+			this.odoCor.relocalize(ang);
 			this.odoCor.doCorrection();
 			
-			while(!(Math.abs(odo.getX()-x)<2 && Math.abs(odo.getY()-y)<2))
+			while(Math.abs(odo.getX()-x)>2 || Math.abs(odo.getY()-y)>2)
 			{
 				if((dist = getUSFilteredData(Usp1, data, dist))<15)
 				{
@@ -193,6 +177,11 @@ public class MasterBrick {
 		else if(destx>x && desty<y)
 			return 270;
 		else return 0;
+	}
+	
+	public double distToDeg(double dist)
+	{
+		return(dist/(2.1*Math.PI)*360);
 	}
 	
 	public void Avoid(double ang, double destx, double desty)
@@ -261,7 +250,7 @@ public class MasterBrick {
 					Filter++;
 					sp.fetchSample(data, 0);
 					newDist = data[0]*100;
-					try{Thread.sleep(10);} catch(Exception e) {}
+					try{Thread.sleep(5);} catch(Exception e) {}
 				}
 			}
 		}

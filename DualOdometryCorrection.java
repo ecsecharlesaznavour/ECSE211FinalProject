@@ -39,7 +39,7 @@ public class DualOdometryCorrection extends Thread{
 				if(col==-1)
 					col = getCSFilteredData(Csp1, data, 0);
 				
-				if(col - (col2 = getCSFilteredData(Csp1, data, col)) > 15)
+				if(col - (col2 = getCSFilteredData(Csp1, data, col)) > 5)
 				{
 					Sound.beep();
 					Adjust();
@@ -57,13 +57,13 @@ public class DualOdometryCorrection extends Thread{
 	private void Adjust()
 	{
 		if(Math.abs(odometer.getAng()-90) < 10)
-			odometer.setY((y++)*30.0 + 17);
+			odometer.setY((y++)*30.0 + 15);
 		else if(Math.abs(odometer.getAng() - 270) < 10)
-			odometer.setY((y--)*30.0 + 13);
+			odometer.setY((y--)*30.0 + 15);
 		else if(Math.abs(odometer.getAng() - 180) < 10)
-			odometer.setX((x--)*30.0 + 13);
+			odometer.setX((x--)*30.0 + 15);
 		else
-			odometer.setX((x++)*30.0 + 17);
+			odometer.setX((x++)*30.0 + 15);
 	}
 	
 	public void doCorrection()
@@ -76,19 +76,13 @@ public class DualOdometryCorrection extends Thread{
 		correct = false;
 	}
 	
-	public void relocalize()
+	public void relocalize(double ang)
 	{
-		leftMotor.setSpeed(75);
-		rightMotor.setSpeed(75);
+		leftMotor.setSpeed(100);
+		rightMotor.setSpeed(100);
 		
 		leftMotor.forward();
 		rightMotor.forward();
-		
-		double[] inits = {odometer.getX(), odometer.getY()};
-		boolean x = true;
-		if(Math.abs(odometer.getAng()-90)<10 || Math.abs(odometer.getAng()-270)<10)
-			x = false;
-			
 		
 		int col1 = getCSFilteredData(Csp1, data, 0);
 		int col2 = getCSFilteredData(Csp2, data, 0);
@@ -124,6 +118,15 @@ public class DualOdometryCorrection extends Thread{
 			col2 = col2b;
 		}
 		Adjust();
+		
+		odometer.setAng(ang);
+		leftMotor.setSpeed(300);
+		rightMotor.setSpeed(300);
+		
+		leftMotor.forward();
+		rightMotor.forward();
+		
+		try{Thread.sleep(500);} catch(Exception e) {}
 	}
 	
 	/**
@@ -143,9 +146,9 @@ public class DualOdometryCorrection extends Thread{
 			return newDist;
 		else
 		{
-			if(Math.abs(last-newDist) > 10)
+			if(Math.abs(last-newDist) > 5)
 			{
-				while(Filter < 15 && Math.abs(last-newDist) > 10)
+				while(Filter < 15 && Math.abs(last-newDist) > 5)
 				{
 					Filter++;
 					sp.fetchSample(data, 0);
