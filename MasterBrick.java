@@ -132,7 +132,7 @@ public class MasterBrick {
 		
 		double dist = getUSFilteredData(Usp1, data, 0);
 		
-		while(Math.abs(odo.getX()-x)>2 && Math.abs(odo.getY()-y)>2)
+		while(Math.abs(odo.getX()-x)>1 && Math.abs(odo.getY()-y)>1)
 		{
 			if((dist = getUSFilteredData(Usp1, data, dist))<15)
 			{

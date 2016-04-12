@@ -39,9 +39,8 @@ public class DualOdometryCorrection extends Thread{
 				if(col==-1)
 					col = getCSFilteredData(Csp1, data, 0);
 				
-				if(col - (col2 = getCSFilteredData(Csp1, data, col)) > 5)
+				if(col - (col2 = getCSFilteredData(Csp1, data, col)) > 7)
 				{
-					Sound.beep();
 					Adjust();
 					col = col2;
 					try{ Thread.sleep(1000);} catch(Exception e){}
@@ -57,13 +56,13 @@ public class DualOdometryCorrection extends Thread{
 	private void Adjust()
 	{
 		if(Math.abs(odometer.getAng()-90) < 10)
-			odometer.setY((y++)*30.0 + 15);
+			odometer.setY((y++)*30.0 + 12);
 		else if(Math.abs(odometer.getAng() - 270) < 10)
-			odometer.setY((y--)*30.0 + 15);
+			odometer.setY((y--)*30.0 + 18);
 		else if(Math.abs(odometer.getAng() - 180) < 10)
-			odometer.setX((x--)*30.0 + 15);
+			odometer.setX((x--)*30.0 + 18);
 		else
-			odometer.setX((x++)*30.0 + 15);
+			odometer.setX((x++)*30.0 + 12);
 	}
 	
 	public void doCorrection()
@@ -91,24 +90,24 @@ public class DualOdometryCorrection extends Thread{
 		int col2b;
 		while(true)
 		{
-			if(col1-(col1b = getCSFilteredData(Csp1, data, col1))> 5)
+			if(col1-(col1b = getCSFilteredData(Csp1, data, col1))> 7)
 			{
-				if(col2-(col2b = getCSFilteredData(Csp2, data, col2)) < 5)
+				if(col2-(col2b = getCSFilteredData(Csp2, data, col2)) < 7)
 				{
 					rightMotor.stop();
 					col1 = col1b;
-					while(col2-(col2b = getCSFilteredData(Csp2, data, col2))<5)
+					while(col2-(col2b = getCSFilteredData(Csp2, data, col2))<7)
 						col2 = col2b;
 					leftMotor.stop();
 				}
 				break;
-			} else if(col2-(col2b = getCSFilteredData(Csp2, data, col2))> 5)
+			} else if(col2-(col2b = getCSFilteredData(Csp2, data, col2))> 7)
 			{
-				if(col1-(col1b = getCSFilteredData(Csp1, data, col1))< 5)
+				if(col1-(col1b = getCSFilteredData(Csp1, data, col1))< 7)
 				{
 					leftMotor.stop();
 					col2 = col2b;
-					while(col1-(col1b = getCSFilteredData(Csp1, data, col1))<5)
+					while(col1-(col1b = getCSFilteredData(Csp1, data, col1))<7)
 						col1 = col1b;
 					rightMotor.stop();
 				}

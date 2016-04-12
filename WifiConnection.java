@@ -18,6 +18,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.HashMap;
 
+import lejos.hardware.Sound;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 
@@ -45,6 +46,7 @@ public class WifiConnection {
 		LCD.drawString("Opening wifi connection to server at IP: " + serverIP, 0, 3);
 	    Socket socketClient = new Socket(serverIP, port);
 	    LCD.drawString("Connected to server", 0, 1);
+	    Sound.beep();
 		DataOutputStream dos = new DataOutputStream(socketClient.getOutputStream());
 		DataInputStream dis = new DataInputStream(socketClient.getInputStream());
 
@@ -52,12 +54,10 @@ public class WifiConnection {
 		LCD.drawString("Waiting for transmission...", 0, 2);
 		while(dis.available() <= 0)
 			try {Thread.sleep(10);} catch (InterruptedException e) {}
-		LCD.drawString("Receiving transmission", 0, 3);		
-		
+		LCD.drawString("Receiving transmission", 0, 3);
 		// Parse transmission
 		this.StartData = ParseTransmission.parseData(dis);
 		LCD.drawString("Finished parsing", 0, 4);
-		
 		// End the wifi connection
 		dis.close();
 		dos.close();
