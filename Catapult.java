@@ -2,26 +2,25 @@ package classes2;
 
 import lejos.hardware.BrickFinder;
 import lejos.robotics.RegulatedMotor;
-import lejos.hardware.Button;
 import lejos.remote.ev3.RemoteRequestEV3;
 
 
 public class Catapult {
 	
-	static RegulatedMotor rightMotor;
-	static RegulatedMotor leftMotor;
-	static RegulatedMotor centerMotor;
+	private RegulatedMotor rightMotor;
+	private RegulatedMotor leftMotor;
+	private RegulatedMotor centerMotor;
 	
-	static int currentPos = 0;
+	private int currentPos = 0;
 	
-	
-	public static void main (String[]args){
+	float [] sample;
+			
+	public Catapult(){
 		
 		 RemoteRequestEV3 slaveBrick = null;
 	     
 	     try{
 	         String address = BrickFinder.discover()[0].getIPAddress();
-	         //masterBrick = new RemoteRequestEV3(address);
 	         slaveBrick = new RemoteRequestEV3(address);
 	         System.out.println("The brick is connected");
 	          
@@ -34,41 +33,10 @@ public class Catapult {
 	     centerMotor = slaveBrick.createRegulatedMotor("B", 'L');
 	     
 	  
-		
-		
-		
-		
-		 while (true){
-	            int buttonPress = 0;
-	            buttonPress = Button.waitForAnyPress();
-	            if (buttonPress == Button.ID_DOWN){
-	            	if (currentPos!= 0){
-	            		try{
-	            			pick();
-	            		}
-	            		catch(Exception e){
-	            			System.out.println("pick problem");
-	            		}
-	            	}
-	            }
-	            if(buttonPress == Button.ID_UP){
-	            	try{
-	            		launch();
-	            	}
-	            	catch(Exception e){
-	            			System.out.println("launch problem");
-	            	}
-	            }
-	            if (buttonPress == Button.ID_ESCAPE){
-	            	leftMotor.close();
-	            	rightMotor.close();
-	            	centerMotor.close();
-	            	break;
-	            }
-	     }
 	}
 	
-	public static void launch (){
+	public void launch (){
+		
 		leftMotor.setAcceleration(20000);
 		centerMotor.setAcceleration(20000);
 		rightMotor.setAcceleration(20000);
@@ -84,7 +52,7 @@ public class Catapult {
 		currentPos = 90;
 	}
 	
-	public static void pick (){
+	public void pick (){
 		leftMotor.setAcceleration(500);
 		centerMotor.setAcceleration(500);
 		rightMotor.setAcceleration(500);
@@ -93,9 +61,9 @@ public class Catapult {
 		centerMotor.setSpeed(500);
 		rightMotor.setSpeed(500);
 		
-		leftMotor.rotate(70, true);
-		centerMotor.rotate(70, true);
-		rightMotor.rotate(70, false);
+		leftMotor.rotate(50, true);
+		centerMotor.rotate(50, true);
+		rightMotor.rotate(50, false);
 		
 		leftMotor.setAcceleration(20);
 		centerMotor.setAcceleration(20);
@@ -111,5 +79,26 @@ public class Catapult {
 		
 		currentPos=0;
 	}
-	
+
+	public void travelMode() {
+		// TODO Auto-generated method stub
+		leftMotor.setAcceleration(200);
+		centerMotor.setAcceleration(200);
+		rightMotor.setAcceleration(200);
+		
+		
+		leftMotor.setSpeed(100);
+		centerMotor.setSpeed(100);
+		rightMotor.setSpeed(100);
+			
+		leftMotor.rotate(-90, true);
+		centerMotor.rotate(-90, true);
+		rightMotor.rotate(-90, false);
+		currentPos = 90;
+	}
+	public void stop(){
+		leftMotor.close();
+		centerMotor.close();
+		rightMotor.close();
+	}
 }

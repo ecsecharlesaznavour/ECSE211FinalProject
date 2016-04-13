@@ -33,8 +33,9 @@ public class MasterBrick {
 	/**
 	 * Command to do localization.
 	 */
-	public void doLocalization()
+	public void doLocalization(int SC)
 	{
+		assert SC>0 && SC<5;
 		//Disables the right sensor and enables the left sensor.
 		USDisable(rightSensor);
 		USEnable(frontSensor);
@@ -78,7 +79,24 @@ public class MasterBrick {
 		
 		//turns to 0 degrees and sets angle
 		turnTo((delta)%360);
-		odo.setPosition(new double [] {-15.0, -15.0, 0.0}, new boolean [] {true, true, true});
+		switch(SC){
+		case 1:
+			odo.setPosition(new double [] {0.0, 0.0, 0.0}, new boolean [] {true, true, true});
+			odoCor.setFactors(-1, -1);
+			break;
+		case 2:
+			odo.setPosition(new double [] {330.0, 0.0, 90.0}, new boolean [] {true, true, true});
+			odoCor.setFactors(11, -1);
+			break;
+		case 3:
+			odo.setPosition(new double [] {330.0, 330.0, 180.0}, new boolean [] {true, true, true});
+			odoCor.setFactors(11, 11);
+			break;
+		default:
+			odo.setPosition(new double [] {0.0, 330.0, 270.0}, new boolean [] {true, true, true});
+			odoCor.setFactors(-1, 11);
+			break;
+		}
 	}
 	
 	public void turnTo(double angle)
@@ -104,7 +122,7 @@ public class MasterBrick {
 			leftMotor.backward();
 			rightMotor.forward();
 		}
-		while(Math.abs(odo.getAng()-angle) > 0.5);
+		while(Math.abs(odo.getAng()-angle) > 1);
 		
 		leftMotor.stop(true);
 		rightMotor.stop(false);
@@ -224,6 +242,19 @@ public class MasterBrick {
 		rightMotor.stop(false);
 		
 		travelTo(destx, desty);
+	}
+	
+	public void Defend(int w1)
+	{
+		double x = 165 + (w1-1)*30;
+		travelTo(x, 300);
+		double ang = 180;
+		turnTo(ang);
+		while(true)
+		{
+			forward(w1*30);
+			turnTo((ang = (ang+180)%360));
+		}
 	}
 	
 	public void forward(double length)

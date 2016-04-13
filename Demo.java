@@ -17,7 +17,7 @@ public class Demo {
 	private final static EV3UltrasonicSensor rightSensor = new EV3UltrasonicSensor(LocalEV3.get().getPort("S2"));
 	private final static EV3ColorSensor RIGHTSensor = new EV3ColorSensor(LocalEV3.get().getPort("S3"));
 	private final static EV3ColorSensor LEFTSensor = new EV3ColorSensor(LocalEV3.get().getPort("S4"));
-	private static final String SERVER_IP = "192.168.0.101";
+	private static final String SERVER_IP = "192.168.10.100";
 	private static final int TEAM_NUMBER = 8;
 
 	@SuppressWarnings("unused")
@@ -47,63 +47,28 @@ public class Demo {
 			} else {
 				Button.LEDPattern(1);
 
-					DTN=t.get("DTN");
+				DTN=t.get("DTN");
+				DSC=t.get("DSC");
+				OTN=t.get("OTN");
+				OSC=t.get("OSC");
+				w1=t.get("w1");
+				d1=t.get("d1");
+				d2=t.get("d2");
+				llx=t.get("ll-x");
+				lly=t.get("ll-y");
+				urx=t.get("ur-x");
+				ury=t.get("ur-y");
+				BC=t.get("BC");
 
-					DSC=t.get("DSC");
-
-					OTN=t.get("OTN");
-
-					OSC=t.get("OSC");
-
-					w1=t.get("w1");
-
-					d1=t.get("d1");
-
-					d2=t.get("d2");
-
-					llx=t.get("ll-x");
-
-					lly=t.get("ll-y");
-
-					urx=t.get("ur-x");
-
-					ury=t.get("ur-y");
-
-					BC=t.get("BC");
-
-				//determine my role
-
-					if (DTN==TEAM_NUMBER)
-
-					{
-
-						myRole=0;
-
-						mySC=DSC;
-					}
-
-					else
-
-					{
-
-						myRole=1;
-
-						mySC=OSC;
-						
-
-					}
-
-				// dump on the screen to make sure
-
-				if (myRole==0)
-	 
-					System.out.print("Defender in corner "+mySC);
-
-				else
-
-					System.out.print("Offense in corner "+mySC);
-
-
+				if (DTN==TEAM_NUMBER)
+				{
+					myRole=0;
+					mySC=DSC;
+				} else
+				{
+					myRole=1;
+					mySC=OSC;					
+				}
 			}
 		} else {
 			Button.LEDPattern(4);
@@ -112,13 +77,49 @@ public class Demo {
 		
 		Odometer odo = new Odometer(leftMotor, rightMotor, 30, true);
 		DualOdometryCorrection odoCor = new DualOdometryCorrection(LEFTSensor, RIGHTSensor, leftMotor, rightMotor, odo);
-		
+		Catapult cata = new Catapult();
 		MasterBrick MB = new MasterBrick(leftMotor, rightMotor, frontSensor, rightSensor, odo, odoCor);
 		
 		odoCor.start();
 		
-		MB.doLocalization();
+		MB.doLocalization(mySC);
 		MB.travelTo(60, 60);
+		
+		if(myRole == 0)
+		{
+			MB.travelTo(150, 300);
+			MB.Defend(w1);
+		} else
+		{
+			llx = llx * 30;
+			lly = lly * 30;
+			double minAng;
+			MB.travelTo(150, 30);
+			MB.travelTo(llx-20, (lly+=6.5));
+			MB.turnTo(0);
+			cata.pick();
+			minAng = (Math.atan2(300 - odo.getY(), 150 - odo.getX())) * (180.0 / Math.PI);
+			MB.turnTo(minAng);
+			cata.launch();
+			MB.travelTo(llx-20, (lly+=13));
+			MB.turnTo(0);
+			cata.pick();
+			minAng = (Math.atan2(300 - odo.getY(), 150 - odo.getX())) * (180.0 / Math.PI);
+			MB.turnTo(minAng);
+			cata.launch();
+			MB.travelTo(llx-20, (lly+=13));
+			MB.turnTo(0);
+			cata.pick();
+			minAng = (Math.atan2(300 - odo.getY(), 150 - odo.getX())) * (180.0 / Math.PI);
+			MB.turnTo(minAng);
+			cata.launch();
+			MB.travelTo(llx-20, (lly+=13));
+			MB.turnTo(0);
+			cata.pick();
+			minAng = (Math.atan2(300 - odo.getY(), 150 - odo.getX())) * (180.0 / Math.PI);
+			MB.turnTo(minAng);
+			cata.launch();
+		}
 		
 		System.exit(0);
 	}

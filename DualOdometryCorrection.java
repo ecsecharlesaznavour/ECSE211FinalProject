@@ -1,6 +1,5 @@
 package classes2;
 
-import lejos.hardware.Sound;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.robotics.SampleProvider;
@@ -126,6 +125,12 @@ public class DualOdometryCorrection extends Thread{
 		rightMotor.forward();
 		
 		try{Thread.sleep(500);} catch(Exception e) {}
+	}
+	
+	public void setFactors(int x, int y)
+	{
+		this.x = x;
+		this.y = y;
 	}
 	
 	/**
