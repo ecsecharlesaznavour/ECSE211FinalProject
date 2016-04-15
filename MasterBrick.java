@@ -13,6 +13,15 @@ public class MasterBrick {
 	private DualOdometryCorrection odoCor;
 	private float[] data;
 	
+	/**
+	 * Constructor for the MasterBrick class
+	 * @param leftMotor left motor of the robot
+	 * @param rightMotor right motor of the robot
+	 * @param frontSensor front ultrasonic sensor of the robot
+	 * @param rightSensor right ultrasonic sensor of the robot
+	 * @param odo odometer of the robot
+	 * @param odoCor odometry correction class
+	 */
 	public MasterBrick(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
 			EV3UltrasonicSensor frontSensor, EV3UltrasonicSensor rightSensor,
 			Odometer odo, DualOdometryCorrection odoCor)
@@ -31,7 +40,8 @@ public class MasterBrick {
 	}
 	
 	/**
-	 * Command to do localization.
+	 * Command for Localization
+	 * @param SC Starting corner
 	 */
 	public void doLocalization(int SC)
 	{
@@ -99,6 +109,10 @@ public class MasterBrick {
 		}
 	}
 	
+	/**
+	 * Turns robot to desired angle
+	 * @param angle desired angle
+	 */
 	public void turnTo(double angle)
 	{
 		if(angle<0)
@@ -129,11 +143,12 @@ public class MasterBrick {
 	}
 	
 	/**
-	 * command responsible for the travelTo method
+	 * Makes robot travel to goven coordinates
 	 * @param x x-coordinate of destination
 	 * @param y y-coordinate of destination
+	 * @param allow boolean to allow odometry correction
 	 */
-	public void travelTo(double x, double y)
+	public void travelTo(double x, double y, boolean allow)
 	{
 		//Enables the needed sensors
 		USEnable(frontSensor);
@@ -145,8 +160,11 @@ public class MasterBrick {
 		
 		turnTo(ang);
 		
-		this.odoCor.relocalize(ang);
-		this.odoCor.doCorrection();
+		if(allow)
+		{
+			this.odoCor.relocalize(ang);
+			this.odoCor.doCorrection();
+		}
 		
 		double dist = getUSFilteredData(Usp1, data, 0);
 		
@@ -167,8 +185,11 @@ public class MasterBrick {
 			
 			turnTo(ang);
 			
-			this.odoCor.relocalize(ang);
-			this.odoCor.doCorrection();
+			if(allow)
+			{
+				this.odoCor.relocalize(ang);
+				this.odoCor.doCorrection();
+			}
 			
 			while(Math.abs(odo.getX()-x)>2 || Math.abs(odo.getY()-y)>2)
 			{
@@ -186,6 +207,14 @@ public class MasterBrick {
 		}
 	}
 	
+	/**
+	 * Gives the first direction the robot is facing for travelTo
+	 * @param x x-coordinate of robot
+	 * @param y y-coordinate of robot
+	 * @param destx x-coordinate of destination
+	 * @param desty y-coordinate of destination
+	 * @return first direction of the robot
+	 */
 	private double getFirstAng(double x, double y, double destx, double desty)
 	{
 		if(destx<x && desty<y)
@@ -197,11 +226,22 @@ public class MasterBrick {
 		else return 0;
 	}
 	
+	/**
+	 * transforms distance into tachometer value
+	 * @param dist distance desired to be transformed
+	 * @return tachometer count in degrees
+	 */
 	public double distToDeg(double dist)
 	{
 		return(dist/(2.1*Math.PI)*360);
 	}
 	
+	/**
+	 * Code for avoid obstacles
+	 * @param ang current angle of the robot
+	 * @param destx x-coordinate of the destination
+	 * @param desty y-coordinate of the destination
+	 */
 	public void Avoid(double ang, double destx, double desty)
 	{
 		double dist = getUSFilteredData(Usp1, data, 0);
@@ -241,13 +281,17 @@ public class MasterBrick {
 		leftMotor.stop(true);
 		rightMotor.stop(false);
 		
-		travelTo(destx, desty);
+		travelTo(destx, desty, true);
 	}
 	
+	/**
+	 * Instruct the robot to defend the goal
+	 * @param w1 width of the goal
+	 */
 	public void Defend(int w1)
 	{
 		double x = 165 + (w1-1)*30;
-		travelTo(x, 300);
+		travelTo(x, 300, true);
 		double ang = 180;
 		turnTo(ang);
 		while(true)
@@ -257,6 +301,10 @@ public class MasterBrick {
 		}
 	}
 	
+	/**
+	 * Enables the robot to go forward for given length
+	 * @param length given length
+	 */
 	public void forward(double length)
 	{
 		int tacho = (int) (length/(2.1*Math.PI)*360);
@@ -264,6 +312,13 @@ public class MasterBrick {
 		while(leftMotor.getTachoCount()<(TC+tacho));
 	}
 	
+	/**
+	 * Method to sample data with the ultrasonic sensors
+	 * @param sp sample provider to sample from
+	 * @param data data array for sample fetching
+	 * @param last last value read from the sensor
+	 * @return distance retrieved by the sensor
+	 */
 	private float getUSFilteredData(SampleProvider sp, float[] data, double last)
 	{
 		sp.fetchSample(data, 0);
@@ -289,11 +344,19 @@ public class MasterBrick {
 		return newDist;
 	}
 	
+	/**
+	 * Turns on the given sensor
+	 * @param sensor given sensor
+	 */
 	public void USEnable(EV3UltrasonicSensor sensor)
 	{
 		sensor.enable();
 	}
 	
+	/**
+	 * Turns off the given sensor
+	 * @param sensor given sensor
+	 */
 	public void USDisable(EV3UltrasonicSensor sensor)
 	{
 		sensor.disable();

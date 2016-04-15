@@ -15,6 +15,9 @@ public class Catapult {
 	
 	float [] sample;
 			
+	/**
+	 * Constructor for the catapult class
+	 */
 	public Catapult(){
 		
 		 RemoteRequestEV3 slaveBrick = null;
@@ -35,6 +38,9 @@ public class Catapult {
 	  
 	}
 	
+	/**
+	 * launch method for the catapult.
+	 */
 	public void launch (){
 		
 		leftMotor.setAcceleration(20000);
@@ -52,6 +58,9 @@ public class Catapult {
 		currentPos = 90;
 	}
 	
+	/**
+	 * pick method for the catapult
+	 */
 	public void pick (){
 		leftMotor.setAcceleration(500);
 		centerMotor.setAcceleration(500);
@@ -80,6 +89,9 @@ public class Catapult {
 		currentPos=0;
 	}
 
+	/**
+	 * raise the catapult so that it doesn't interfere with the ultrasonic sensor
+	 */
 	public void travelMode() {
 		// TODO Auto-generated method stub
 		leftMotor.setAcceleration(200);
@@ -96,6 +108,10 @@ public class Catapult {
 		rightMotor.rotate(-90, false);
 		currentPos = 90;
 	}
+	
+	/**
+	 * Stops the catapult
+	 */
 	public void stop(){
 		leftMotor.close();
 		centerMotor.close();

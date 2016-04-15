@@ -14,6 +14,14 @@ public class DualOdometryCorrection extends Thread{
 	private boolean correct = false;
 	private int x,y = -1;
 	
+	/**
+	 * Constructor for the DualOdometryCorrection class
+	 * @param leftSensor left color sensor of the class
+	 * @param rightSensor right color sensor of the class
+	 * @param leftMotor left motor of the class
+	 * @param rightMotor right motor of the class
+	 * @param odometer odometer of the class
+	 */
 	public DualOdometryCorrection(EV3ColorSensor leftSensor, EV3ColorSensor rightSensor,
 			EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
 			Odometer odometer)
@@ -27,6 +35,10 @@ public class DualOdometryCorrection extends Thread{
 		this.Csp2 = this.leftSensor.getRedMode();
 		this.data = new float[Csp1.sampleSize()];
 	}
+	
+	/**
+	 * run method for the classe's thread
+	 */
 	public void run()
 	{
 		int col = -1;
@@ -52,6 +64,9 @@ public class DualOdometryCorrection extends Thread{
 		}
 	}
 	
+	/**
+	 * adjust odometer value based on line detection
+	 */
 	private void Adjust()
 	{
 		if(Math.abs(odometer.getAng()-90) < 10)
@@ -64,16 +79,26 @@ public class DualOdometryCorrection extends Thread{
 			odometer.setX((x++)*30.0 + 12);
 	}
 	
+	/**
+	 * allows the class to correct the odometer
+	 */
 	public void doCorrection()
 	{
 		correct = true;
 	}
 	
+	/**
+	 * prevents the class from correction the odometer
+	 */
 	public void stopCorrection()
 	{
 		correct = false;
 	}
 	
+	/**
+	 * relocalize by putting the robot perpendicular to the line in front of it
+	 * @param ang
+	 */
 	public void relocalize(double ang)
 	{
 		leftMotor.setSpeed(100);
@@ -127,6 +152,11 @@ public class DualOdometryCorrection extends Thread{
 		try{Thread.sleep(500);} catch(Exception e) {}
 	}
 	
+	/**
+	 * sets x and y factors for odometry correction
+	 * @param x x tile value
+	 * @param y y tile value
+	 */
 	public void setFactors(int x, int y)
 	{
 		this.x = x;
